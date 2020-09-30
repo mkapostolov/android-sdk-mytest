@@ -1,0 +1,16 @@
+.settings/
+bin/
+gen/
+target/
+build/
+.project
+.classpath
+.metadata/
+.recommenders/
+release/zipped
+.idea
+.gradle/
+# IntelliJ
+*.iml
+local.properties
+/samples/

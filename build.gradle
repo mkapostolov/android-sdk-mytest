@@ -1,0 +1,134 @@
+apply plugin: 'java'
+
+allprojects  {
+  apply plugin: 'maven'
+  group = 'com.kinvey'
+  version = '4.4.0'
+  description = "The Kinvey SDK makes it easy to write Android apps with Kinvey"
+  ext.kinveyApiVersion = '5'
+  ext.dokkaVersion = '0.9.17'
+}
+
+subprojects {
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+  repositories {
+    mavenLocal()
+    jcenter()
+    maven { url 'https://maven.google.com' }
+    maven {
+      url  "http://dl.bintray.com/realm/maven"
+    }
+    maven {
+      url "https://jitpack.io"
+    }
+    maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+    maven { url "https://repo1.maven.org/maven2" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+
+  }
+}
+
+
+
+task makeAndroidJar(type: Copy)  {
+    from 'android-lib/build/intermediates/bundles/release'
+    from 'android-lib/build/outputs/aar'
+    into 'release/build/android'
+    include('classes.jar')
+    include('android-lib-release.aar')
+    rename('classes.jar', 'kinvey-android-' + version + '.jar')
+    rename('android-lib-release.aar', 'kinvey-android-' + version + '.aar')
+
+}
+
+task copyAndroid(type: Copy)  {
+  from 'java-api-core/build/libs'
+  into 'release/build/android'
+}
+
+task zipAndroid(type: Zip) {
+  from('release/build/android'){
+    include "*.aar"
+    include "*core*.jar"
+    into "/lib"
+
+  }
+
+  from('release/dependencies'){
+    include "*.jar"
+    include "*.aar"
+    into "/lib"
+  }
+
+  from 'release/readme/android'
+    baseName = 'kinvey-android'
+    destinationDir = file('release/zipped')
+}
+
+task zipJava(type: Zip)  {
+  from('release/build/nativejava'){
+    into '/libs'
+  }
+  from('release/dependencies'){
+    include "*.jar"
+    into '/libs'
+  }
+  from 'release/readme/nativejava'
+    baseName = 'kinvey-java'
+    destinationDir = file('release/zipped')
+
+}
+
+task cleanDir{
+  delete 'release/build'
+}
+
+task prepCore{
+  prepCore.dependsOn(":java-api-core:clean")
+  prepCore.dependsOn(":java-api-core:cleanTest")
+  prepCore.dependsOn(":java-api-core:cleanDokka")
+  prepCore.dependsOn(":java-api-core:build")
+  prepCore.dependsOn(":java-api-core:dokka")
+}
+
+task prepAndroid{
+  prepAndroid.dependsOn(":android-lib:clean")
+  prepAndroid.dependsOn(":android-lib:cleanTest")
+  prepAndroid.dependsOn(":android-lib:cleanDokka")
+  prepAndroid.dependsOn(":android-lib:build")
+  prepAndroid.dependsOn(":android-lib:lint")
+  prepAndroid.dependsOn(":android-lib:dokka")
+}
+
+task prepSecure{
+  prepSecure.dependsOn(":android-secure:clean")
+  prepSecure.dependsOn(":android-secure:cleanTest")
+  prepSecure.dependsOn(":android-secure:build")
+}
+
+task release(dependsOn: ['cleanDir', 'prepCore', 'prepAndroid' /*, 'prepSecure'*/, 'makeAndroidJar', 'copyAndroid', 'zipAndroid', 'zipJava']){
+    description 'Performs the complete release process (except for bumping version number!)'
+}
+
+prepCore.mustRunAfter cleanDir
+prepAndroid.mustRunAfter prepCore
+//prepSecure.mustRunAfter prepJava
+//prepSecure.mustRunAfter prepAndroid
+makeAndroidJar.mustRunAfter prepAndroid
+copyAndroid.mustRunAfter makeAndroidJar
+zipAndroid.mustRunAfter copyAndroid
+//zipAndroid.mustRunAfter copyAndroid
+
+zipJava.mustRunAfter zipAndroid
+release.mustRunAfter zipJava
+buildscript {
+  ext.kotlin_version = '1.3.50'
+  repositories {
+    mavenCentral()
+  }
+}
+repositories {
+  mavenCentral()
+}

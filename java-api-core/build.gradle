@@ -1,0 +1,125 @@
+buildscript {
+    ext.kotlin_version = '1.3.50'
+    //ext.google_http_client_version = '1.31.0'
+    //ext.google_http_client_gson = '1.31.0'
+    //ext.google_http_client_jackson = '1.29.2'
+    ext.google_http_client_version = '1.19.0'
+    ext.google_http_client_gson = '1.19.0'
+    ext.google_http_client_jackson = '1.19.0'
+
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:${dokkaVersion}"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+plugins {
+    id 'de.fuerstenau.buildconfig' version '1.1.8'
+
+    // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
+    id 'org.jetbrains.kotlin.jvm' version '1.3.41'
+}
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'org.jetbrains.dokka'
+apply plugin: 'de.fuerstenau.buildconfig'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+apply plugin: "jacoco"
+description = 'JavaApiCore'
+group = 'com.kinvey'
+
+compileJava.options.encoding = 'UTF-8'
+
+buildConfig {
+    appName = project.name       // sets value of NAME field
+    version = project.version // sets value of VERSION field,
+    // 'unspecified' if project.version is not set
+    buildConfigField("String", "KINVEY_API_VERSION", project.kinveyApiVersion)
+
+    clsName = 'BuildConfig'      // sets the name of the BuildConfig class
+    packageName = project.group // sets the package of the BuildConfig class,
+    // 'de.fuerstenau.buildconfig' if project.group is not set
+    charset = 'UTF-8'            // sets charset of the generated class,
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+    test{
+        java{
+            srcDir 'test'
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.7.1.201405082137"
+    reportsDir = file("$buildDir/customJacocoReportDir")
+}
+
+dokka {
+    outputFormat = 'javadoc'
+    jdkVersion = 8
+    outputDirectory = file("../../devcenter/content/reference/android-v3.0/api/java")
+    sourceDirs = files('src')
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:28.0-jre'
+    implementation "com.google.http-client:google-http-client-jackson:$google_http_client_jackson"
+    implementation 'com.google.code.gson:gson:2.8.5'
+    testImplementation("com.google.http-client:google-http-client-gson:$google_http_client_gson") {
+        exclude(module: 'xpp3')
+    }
+    testImplementation 'junit:junit:4.12'
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '3.0.0'
+    testImplementation group: 'org.powermock', name: 'powermock-api-mockito2', version: '2.0.2'
+    implementation("com.google.http-client:google-http-client:$google_http_client_version") {
+        exclude(module: 'xpp3')
+        exclude(module: 'httpclient')
+        exclude(module: 'junit')
+        exclude(module: 'android')
+        exclude(module: 'guava-jdk5')
+    }
+    implementation 'com.google.dexmaker:dexmaker:1.2'
+    implementation 'org.apache.ant:ant:1.10.6'
+    implementation group: 'com.pubnub', name: 'pubnub-gson', version: '4.26.1'
+    implementation group: 'org.codehaus.mojo', name: 'animal-sniffer-annotations', version: '1.18'
+    // Use the Kotlin JDK 8 standard library.
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    // Use the Kotlin test library.
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    // Use the Kotlin JUnit integration.
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
+}
+
+cleanTest.mustRunAfter clean
+cleanDokka.mustRunAfter cleanTest
+build.mustRunAfter cleanDokka
+dokka.mustRunAfter build
+repositories {
+    mavenCentral()
+    jcenter()
+}
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
